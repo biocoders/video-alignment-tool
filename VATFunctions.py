@@ -18,12 +18,18 @@ class VideoAlignment:
         self.startFrame = startframe
         self.endFrame = endframe
         return
-    
+
+    def SetVideo(self, filename):
+        self.fileName = filename
+        self.startFrame = 0
+        self.endFrame = -1
+        return
+
     def SetDimensions(self, width, height):
         self.width = width
         self.height = height
 
-    def DisplayFrame(self, frameNumber):
+    def GetFrame(self, frameNumber):
         self.cap = cv2.VideoCapture(self.fileName)
         cap = self.cap
         if not self.cap.isOpened():
@@ -32,13 +38,18 @@ class VideoAlignment:
         numOfFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         if frameNumber >= numOfFrames - 1:
             frameNumber = numOfFrames - 1
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frameNumber) 
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frameNumber)
         ret, frame = cap.read()
         if not ret:
             self.error = "File not read"
             return
         frame = np.flip(frame, axis=2)
-        plt.imshow(frame)
+        return frame
+
+    def DisplayFrame(self, frameNumber):
+        frame = self.GetFrame(frameNumber)
+        if frame:
+            plt.imshow(frame)
 
     def TransformVideo(self, registration_points):
         if self.cap == None:
@@ -62,7 +73,7 @@ class VideoAlignment:
         numOfFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         if self.endFrame < 0 or self.endFrame >= numOfFrames - 1:
             self.endFrame = numOfFrames - 1
-        cap.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame) 
+        cap.set(cv2.CAP_PROP_POS_FRAMES, self.startFrame)
 
         images = []
         for i in range(self.endFrame - self.startFrame + 1):
@@ -77,10 +88,10 @@ class VideoAlignment:
         frame_rate = cap.get(cv2.CAP_PROP_FPS)
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter('transformed.mp4', fourcc, frame_rate, (self.width, self.height))
- 
+
         for i in range(len(images)):
             out.write(images[i])
         out.release()
 
-    
+
 

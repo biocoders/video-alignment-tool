@@ -1,7 +1,8 @@
 import sys
 import VATFunctions as VAT
-from PyQt5.QtCore import Qt
-from PyQt5.QtMultimedia import QMediaPlayer
+from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (
     QApplication,
@@ -12,7 +13,6 @@ from PyQt5.QtWidgets import (
     QSlider,
     QVBoxLayout,
     QHBoxLayout,
-    QGridLayout,
     QWidget,
     QFileDialog
 )
@@ -27,70 +27,56 @@ class MainWindow(QMainWindow):
     videoWidgetInput = None
     videoWidgetTransformed = None
     videoPlayerInput = None
+    imageWidgetInput = None
+    imageWidgetOutput = None
+    vat = None
+    inputEditBox = None
+    transformedEditBox = None
 
-    def __getFileIOPanel__(self, label, defaultValue, fileMode):
-        filePanel = QHBoxLayout()
-        
-        fileNamePanel = QVBoxLayout()
-        fileNamePanel.addWidget(QLabel(label))
-        editBox = QLineEdit(defaultValue)
-        fileNamePanel.addWidget(editBox)
-        
-        filePanel.addLayout(fileNamePanel)
-        btnLoad = QPushButton("Load")
-        filePanel.addWidget(btnLoad)
-        btnLoad.clicked.connect(lambda: self.__openFile__(editBox))
-        filePanel.addWidget(QPushButton(fileMode))
-        return filePanel
-    
-    def __openFile__(self, editBox):
+    def __openFile__(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "","","Video files (*.mp4)" )
         if fileName:
             self.inputFilename = fileName
-            editBox.setText(fileName)
-            self.videoPlayerInput.setMedia(fileName)
-            self.videoWidgetInput.show()
+            self.inputEditBox.setText(fileName)
+            self.vat.SetVideo(fileName)
+            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(fileName)))
+            self.mediaPlayer.pause()
 
     def __moveToPosition__(self, pos):
-        vat = VAT.VideoAlignment(self.inputFilename)
-        vat.DisplayFrame(pos)
+        self.imageWidgetInput.load(self.vat.GetFrame(pos))
 
 
     def __init__(self):
         super().__init__()
-
+        self.vat = VAT.VideoAlignment("")
         self.setWindowTitle("Video Alignment Tool")
+        self.setFixedHeight(600)
+        self.setFixedWidth(800)
 
         mainLayout = QVBoxLayout()
 
-        inputFilePanel = self.__getFileIOPanel__("Input Video", "", "Load")
+        inputFilePanel = QHBoxLayout()
+        fileNamePanel = QVBoxLayout()
+        fileNamePanel.addWidget(QLabel("Input Video"))
+        self.inputEditBox  = QLineEdit()
+        fileNamePanel.addWidget(self.inputEditBox)
+
+        inputFilePanel.addLayout(fileNamePanel)
+        btnLoad = QPushButton("Open")
+        inputFilePanel.addWidget(btnLoad)
+        btnLoad.clicked.connect(lambda: self.__openFile__())
+        inputFilePanel.addWidget(QPushButton("Load"))
+
+
+        self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        videoWidget = QVideoWidget()
+        self.mediaPlayer.setVideoOutput(videoWidget)
+        inputFilePanel.addWidget(videoWidget)
+
         mainLayout.addLayout(inputFilePanel)
-
-        videoPanel = QHBoxLayout()
-        videoPanelLeft = QVBoxLayout()
-        videoPanelLeft.addWidget(QLabel("Example Image"))
-        self.videoWidgetInput = QVideoWidget()
-        self.videoPlayerInput = QMediaPlayer()
-        self.videoPlayerInput.setVideoOutput(self.videoWidgetInput)
-        videoPanelLeft.addWidget(self.videoWidgetInput)
-        slider = QSlider(Qt.Horizontal)
-        videoPanelLeft.addWidget(slider)
-        slider.sliderMoved.connect(lambda: self.__moveToPosition__(slider.pos))
-        videoPanel.addLayout(videoPanelLeft)
-
-        videoPanelRight = QVBoxLayout()
-        videoPanel.addLayout(videoPanelRight)
-        
-        mainLayout.addLayout(videoPanel)
-
-        outputFilePanel = self.__getFileIOPanel__("Output Video", "", "Save")
-        mainLayout.addLayout(outputFilePanel)
 
         widget = QWidget()
         widget.setLayout(mainLayout)
-
-        # Set the central widget of the Window. Widget will expand
-        # to take up all the space in the window by default.
         self.setCentralWidget(widget)
 
 
