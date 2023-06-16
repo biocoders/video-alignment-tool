@@ -1,7 +1,11 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+from tqdm import tqdm
 
+
+os.chdir("/Users/matthieuvilain/Desktop/video-alignment-tool")
 
 width = 600 # in mm
 height = 200 # in mm
@@ -26,6 +30,7 @@ target = schema.astype(np.float32)
 
 
 cap = cv2.VideoCapture("/Users/matthieuvilain/Desktop/video-alignment-tool/demo.mp4")
+fps= float(cap.get(cv2.CAP_PROP_FPS))
 
 transformation = cv2.getPerspectiveTransform(src, target)
 
@@ -35,9 +40,10 @@ total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 export_video = cv2.VideoWriter('demo_transfomed.mp4', 
                          cv2.VideoWriter_fourcc(*'MP4V'),
-                         30, (width,height))
+                         fps, (width,height))
 
-for _ in range(total_frames):
+
+for _ in tqdm(range(total_frames)):
     
     #cap.set(cv2.CAP_PROP_POS_FRAMES, 1)
     ret, frame = cap.read()
