@@ -1,17 +1,16 @@
 import sys
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtCore import QDir, Qt, QUrl, QSize
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel,
-        QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget, QStatusBar)
+from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt, QUrl, QSize
+from PyQt6.QtMultimedia import QMediaPlayer
+from PyQt6.QtMultimediaWidgets import QVideoWidget
+from PyQt6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QPushButton, QSlider, QStyle, QVBoxLayout, QWidget, QStatusBar)
 
 class VideoPlayer(QWidget):
 
     def __init__(self, parent=None):
         super(VideoPlayer, self).__init__(parent)
 
-        self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.mediaPlayer = QMediaPlayer(None)
 
         btnSize = QSize(16, 16)
         videoWidget = QVideoWidget()
@@ -22,17 +21,15 @@ class VideoPlayer(QWidget):
         openButton.setFixedHeight(24)
         openButton.setIconSize(btnSize)
         openButton.setFont(QFont("Noto Sans", 8))
-        openButton.setIcon(QIcon.fromTheme("document-open", QIcon("D:/_Qt/img/open.png")))
         openButton.clicked.connect(self.abrir)
 
         self.playButton = QPushButton()
         self.playButton.setEnabled(False)
         self.playButton.setFixedHeight(24)
         self.playButton.setIconSize(btnSize)
-        self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.playButton.clicked.connect(self.play)
 
-        self.positionSlider = QSlider(Qt.Horizontal)
+        self.positionSlider = QSlider(Qt.Orientation.Horizontal)
         self.positionSlider.setRange(0, 0)
         self.positionSlider.sliderMoved.connect(self.setPosition)
 
@@ -54,10 +51,10 @@ class VideoPlayer(QWidget):
         self.setLayout(layout)
 
         self.mediaPlayer.setVideoOutput(videoWidget)
-        self.mediaPlayer.stateChanged.connect(self.mediaStateChanged)
+        self.mediaPlayer.mediaStatusChanged.connect(self.mediaStateChanged)
         self.mediaPlayer.positionChanged.connect(self.positionChanged)
         self.mediaPlayer.durationChanged.connect(self.durationChanged)
-        self.mediaPlayer.error.connect(self.handleError)
+        self.mediaPlayer.errorOccurred.connect(self.handleError)
         self.statusBar.showMessage("Ready")
 
     def abrir(self):
@@ -65,8 +62,11 @@ class VideoPlayer(QWidget):
                 ".", "Video Files (*.mp4 *.flv *.ts *.mts *.avi)")
 
         if fileName != '':
-            self.mediaPlayer.setMedia(
-                    QMediaContent(QUrl.fromLocalFile(fileName)))
+            try:
+                self.mediaPlayer.setSource(QUrl.fromLocalFile(fileName))
+            except Exception as e:
+                print(e)
+
             self.playButton.setEnabled(True)
             self.statusBar.showMessage(fileName)
             self.play()
@@ -105,4 +105,4 @@ if __name__ == '__main__':
     player.setWindowTitle("Player")
     player.resize(600, 400)
     player.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
